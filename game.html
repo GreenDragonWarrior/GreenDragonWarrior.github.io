@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Игра</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="top-bar">
+    <span>Игрок: {{ nickname }}</span>
+    <span style="margin-left: 20px;">Лучший результат: <strong id="bestScore">{{ best_score }}</strong></span>
+</div>
+
+<div class="container">
+    <h1>Реакция</h1>
+    <p>Время: <span id="timer">30</span> сек</p>
+    <p>Текущий результат: <span id="currentScore">0</span></p>
+
+    <div class="task">
+        <span id="expression">?</span>
+    </div>
+
+    <div class="buttons">
+        <button id="btn1"></button>
+        <button id="btn2"></button>
+    </div>
+</div>
+
+<script>
+    // Настройки игры
+    const GAME_TIME = 30; // секунд
+
+    let timeLeft = GAME_TIME;
+    let score = 0;
+    let correctAnswer = null;
+
+    const timerElement = document.getElementById("timer");
+    const currentScoreElement = document.getElementById("currentScore");
+    const expressionElement = document.getElementById("expression");
+    const btn1 = document.getElementById("btn1");
+    const btn2 = document.getElementById("btn2");
+
+    function getRandomInt(min, max) {
+        // включительно
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateTask() {
+        const a = getRandomInt(1, 10);
+        const b = getRandomInt(1, 10);
+        // Можно менять тип примеров: +, -, *, /
+        correctAnswer = a + b;
+
+        expressionElement.textContent = a + " + " + b + " = ?";
+
+        // Генерируем неправильный ответ (гарантированно другой)
+        let wrongAnswer = correctAnswer;
+        while (wrongAnswer === correctAnswer) {
+            wrongAnswer = correctAnswer + getRandomInt(-3, 3);
+        }
+
+        // Случайно выбираем кнопку для правильного ответа
+        if (Math.random() < 0.5) {
+            btn1.textContent = correctAnswer;
+            btn2.textContent = wrongAnswer;
+            btn1.dataset.correct = "true";
+            btn2.dataset.correct = "false";
+        } else {
+            btn1.textContent = wrongAnswer;
+            btn2.textContent = correctAnswer;
+            btn1.dataset.correct = "false";
+            btn2.dataset.correct = "true";
+        }
+    }
+
+    function handleAnswer(e) {
+        const isCorrect = e.target.dataset.correct === "true";
+        if (isCorrect) {
+            score++;
+            currentScoreElement.textContent = score;
+        }
+        generateTask();
+    }
+
+    btn1.addEventListener("click", handleAnswer);
+    btn2.addEventListener("click", handleAnswer);
+
+    // Таймер
+    const intervalId = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+            clearInterval(intervalId);
+            endGame();
+        }
+    }, 1000);
+
+    function endGame() {
+        // Блокируем кнопки
+        btn1.disabled = true;
+        btn2.disabled = true;
+
+        // Отправляем результат на сервер
+        fetch("{{ url_for('save_score') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({score: score}),
+        })
+            .then(response => response.json())
+            .then(data => {
+                // После сохранения результата переходим на страницу результата
+                window.location.href = "{{ url_for('result') }}";
+            })
+            .catch(err => {
+                console.error("Ошибка сохранения:", err);
+                window.location.href = "{{ url_for('result') }}";
+            });
+    }
+
+    // Старт игры
+    generateTask();
+</script>
+</body>
+</html>
