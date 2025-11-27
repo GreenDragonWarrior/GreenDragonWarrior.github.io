@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Результат</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Результат</h1>
+    <p>Игрок: <strong>{{ nickname }}</strong></p>
+    <p>Текущий результат: <strong>{{ last_score }}</strong></p>
+    <p>Лучший результат: <strong>{{ best_score }}</strong></p>
+
+    <div class="buttons">
+        <form action="{{ url_for('game') }}" method="get" style="display:inline;">
+            <button type="submit">Продолжить</button>
+        </form>
+
+        <form action="{{ url_for('logout') }}" method="get" style="display:inline; margin-left: 10px;">
+            <button type="submit">Выйти</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
